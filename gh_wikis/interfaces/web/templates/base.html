@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GitHub Wiki Exporter{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.11.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Check for user preference
+        if (localStorage.getItem('theme') === 'light' ||
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        
+        // Theme toggle function
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+    </script>
+    <style>
+        .job-progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        
+        .job-progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            background-color: hsl(var(--p));
+            transition: width 0.3s ease;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-base-100">
+    <div class="drawer">
+        <input id="my-drawer-3" type="checkbox" class="drawer-toggle" /> 
+        <div class="drawer-content flex flex-col">
+            <!-- Navbar -->
+            <div class="w-full navbar bg-base-300">
+                <div class="flex-none lg:hidden">
+                    <label for="my-drawer-3" aria-label="open sidebar" class="btn btn-square btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </label>
+                </div> 
+                <div class="flex-1 px-2 mx-2 text-xl font-bold">
+                    <a href="/" class="btn btn-ghost normal-case text-xl">GitHub Wiki Exporter</a>
+                </div>
+                <div class="flex-none hidden lg:block">
+                    <ul class="menu menu-horizontal">
+                        <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+                        <li><a href="/jobs" class="{% if request.path == '/jobs' %}active{% endif %}">Jobs</a></li>
+                        <li><a href="/wikis" class="{% if request.path == '/wikis' %}active{% endif %}">Wiki Exports</a></li>
+                        <li>
+                            <button onclick="toggleTheme()" class="btn btn-circle btn-ghost">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Page content -->
+            <div class="container mx-auto p-4">
+                <div class="mb-4">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div> 
+        
+        <!-- Sidebar for mobile -->
+        <div class="drawer-side">
+            <label for="my-drawer-3" aria-label="close sidebar" class="drawer-overlay"></label> 
+            <ul class="menu p-4 w-80 min-h-full bg-base-200">
+                <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+                <li><a href="/jobs" class="{% if request.path == '/jobs' %}active{% endif %}">Jobs</a></li>
+                <li><a href="/wikis" class="{% if request.path == '/wikis' %}active{% endif %}">Wiki Exports</a></li>
+                <li>
+                    <button onclick="toggleTheme()" class="btn btn-ghost justify-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        Toggle Theme
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
+        <div>
+            <p>GitHub Wiki Exporter - Convert GitHub Wikis to Markdown, PDF, and EPUB</p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

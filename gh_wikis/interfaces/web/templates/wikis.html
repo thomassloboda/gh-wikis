@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Wiki Exports{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-2xl font-bold">Wiki Exports</h1>
+  <a href="/" class="btn btn-primary btn-sm">New Export</a>
+</div>
+
+<div class="overflow-x-auto bg-base-100 shadow-xl rounded-xl">
+  <table class="table table-zebra w-full">
+    <thead>
+      <tr>
+        <th>Repository</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Downloads</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <td>
+          <div class="flex flex-col">
+            <a href="{{ job.repository_url }}" target="_blank" class="font-medium hover:underline">
+              {{ job.repository_url.split('github.com/')[1] if 'github.com/' in job.repository_url else job.repository_url }}
+            </a>
+            <span class="text-xs opacity-70">{{ job.id }}</span>
+          </div>
+        </td>
+        <td>
+          {% if job.status.name == "COMPLETED" %}
+            <div class="badge badge-success">Completed</div>
+          {% elif job.status.name == "FAILED" %}
+            <div class="badge badge-error">Failed</div>
+          {% elif job.status.name == "PROCESSING" %}
+            <div class="badge badge-info">Processing</div>
+          {% else %}
+            <div class="badge badge-ghost">{{ job.status.name }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <div class="flex flex-col">
+            <span>{{ job.created_at.strftime('%Y-%m-%d') }}</span>
+            <span class="text-xs opacity-70">{{ job.created_at.strftime('%H:%M:%S') }}</span>
+          </div>
+        </td>
+        <td>
+          {% if job.status.name == "COMPLETED" %}
+            <div class="flex flex-col gap-1">
+              {% set job_files = files.get(job.id, []) %}
+              {% if job_files %}
+                {% for file in job_files %}
+                  <a href="{{ file.download_url }}" class="btn btn-outline btn-xs flex items-center gap-1">
+                    {% if file.format.name == "MARKDOWN" %}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                      Markdown
+                    {% elif file.format.name == "PDF" %}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      PDF
+                    {% elif file.format.name == "EPUB" %}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      EPUB
+                    {% else %}
+                      {{ file.format.name }}
+                    {% endif %}
+                  </a>
+                {% endfor %}
+              {% else %}
+                <span class="text-info text-sm">No files found for this job</span>
+              {% endif %}
+            </div>
+          {% elif job.status.name == "FAILED" %}
+            <span class="text-error text-sm">{{ job.error_message or "Failed to generate files" }}</span>
+          {% else %}
+            <span class="text-sm opacity-70">No files available</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="flex gap-1">
+            <a href="/jobs/{{ job.id }}" class="btn btn-xs btn-outline">Details</a>
+            <button onclick="confirmDeleteJob('{{ job.id }}')" class="btn btn-xs btn-error">Delete</button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if not jobs %}
+<div class="text-center my-12 opacity-70">
+  <p>No wiki exports found</p>
+  <a href="/" class="btn btn-primary mt-4">Create a new export</a>
+</div>
+{% endif %}
+
+<!-- Delete Job Modal -->
+<div id="deleteJobModal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Confirm Deletion</h3>
+    <p class="py-4">Are you sure you want to delete this job and all associated files? This action cannot be undone.</p>
+    <div class="modal-action">
+      <form id="deleteJobForm" method="post">
+        <button type="submit" class="btn btn-error">Delete</button>
+      </form>
+      <button onclick="closeDeleteModal()" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Functions for deletion modals
+function confirmDeleteJob(jobId) {
+  document.getElementById('deleteJobForm').action = `/jobs/${jobId}/delete`;
+  document.getElementById('deleteJobModal').classList.add('modal-open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteJobModal').classList.remove('modal-open');
+}
+</script>
+{% endblock %}

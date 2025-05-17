@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Wiki Exporter - Home{% endblock %}
+
+{% block content %}
+<div class="hero min-h-[60vh] bg-base-200 rounded-box">
+    <div class="hero-content text-center">
+        <div class="max-w-md">
+            <h1 class="text-5xl font-bold">GitHub Wiki Exporter</h1>
+            <p class="py-6">Enter a GitHub repository URL to export its wiki content to Markdown, PDF, and EPUB formats.</p>
+            
+            <div class="mt-8">
+                <form id="createJobForm" class="form-control w-full max-w-md mx-auto">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <input 
+                                type="url" 
+                                id="repositoryUrl" 
+                                name="repositoryUrl" 
+                                placeholder="https://github.com/user/repo" 
+                                class="input input-bordered w-full" 
+                                required
+                            />
+                            <div id="urlError" class="text-error mt-1 hidden">Please enter a valid GitHub repository URL</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Export Wiki</button>
+                    </div>
+                </form>
+                <div class="mt-4">
+                    <a href="/wikis" class="link link-hover text-sm">View all exported wikis</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="divider my-8">How It Works</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="card bg-base-200 shadow-xl">
+        <div class="card-body items-center text-center">
+            <h2 class="card-title">1. Enter Repository URL</h2>
+            <p>Provide the URL of any public GitHub repository that has a wiki or README.</p>
+        </div>
+    </div>
+    
+    <div class="card bg-base-200 shadow-xl">
+        <div class="card-body items-center text-center">
+            <h2 class="card-title">2. We Process the Content</h2>
+            <p>Our system will download the wiki content, format it, and generate documents in multiple formats.</p>
+        </div>
+    </div>
+    
+    <div class="card bg-base-200 shadow-xl">
+        <div class="card-body items-center text-center">
+            <h2 class="card-title">3. Download Your Files</h2>
+            <p>Once processing is complete, download the wiki content in Markdown, PDF, and EPUB formats.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createJobForm');
+    const repositoryUrlInput = document.getElementById('repositoryUrl');
+    const urlError = document.getElementById('urlError');
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validate GitHub URL
+        const url = repositoryUrlInput.value.trim();
+        const githubRegex = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/?$/;
+        
+        if (!githubRegex.test(url)) {
+            urlError.classList.remove('hidden');
+            return;
+        }
+        
+        urlError.classList.add('hidden');
+        
+        try {
+            // Submit to API
+            const response = await fetch('/api/jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    repository_url: url
+                }),
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Redirect to job page
+                window.location.href = `/jobs/${data.id}`;
+            } else {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.detail || 'Failed to create job'}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while creating the job');
+        }
+    });
+    
+    // Hide error message when input changes
+    repositoryUrlInput.addEventListener('input', function() {
+        urlError.classList.add('hidden');
+    });
+});
+</script>
+{% endblock %}

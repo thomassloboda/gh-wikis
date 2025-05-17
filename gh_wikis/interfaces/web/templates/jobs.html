@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Wiki Exporter - Jobs{% endblock %}
+
+{% block content %}
+<div class="card bg-base-200 shadow-xl">
+    <div class="card-body">
+        <h2 class="card-title text-2xl mb-4">Jobs</h2>
+        
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr>
+                        <th>Repository</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="jobsTableBody">
+                    <tr>
+                        <td colspan="5" class="text-center">Loading jobs...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card-actions justify-end mt-4 flex flex-wrap gap-2">
+            <a href="/wikis" class="btn btn-outline">View Wiki Exports</a>
+            <a href="/" class="btn btn-primary">Create New Job</a>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Job Modal -->
+<div id="deleteJobModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Confirm Deletion</h3>
+        <p class="py-4">Are you sure you want to delete <span id="deleteJobName" class="font-bold"></span> and all associated files? This action cannot be undone.</p>
+        <div class="modal-action">
+            <form id="deleteJobForm" method="post">
+                <button type="submit" class="btn btn-error">Delete</button>
+            </form>
+            <button onclick="closeDeleteModal()" class="btn">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadJobs();
+    
+    // Refresh jobs every 5 seconds
+    setInterval(loadJobs, 5000);
+});
+
+async function loadJobs() {
+    try {
+        const response = await fetch('/api/jobs');
+        if (!response.ok) {
+            throw new Error('Failed to fetch jobs');
+        }
+        
+        const data = await response.json();
+        renderJobs(data.jobs);
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('jobsTableBody').innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-error">Failed to load jobs: ${error.message}</td>
+            </tr>
+        `;
+    }
+}
+
+function renderJobs(jobs) {
+    const tableBody = document.getElementById('jobsTableBody');
+    
+    if (jobs.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center">No jobs found. <a href="/" class="link">Create one</a>!</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const rows = jobs.map(job => {
+        const repoName = new URL(job.repository_url).pathname.split('/').filter(Boolean).join('/');
+        const statusClass = getStatusClass(job.status);
+        const formattedDate = new Date(job.created_at).toLocaleString();
+        
+        return `
+            <tr>
+                <td>${repoName}</td>
+                <td><span class="badge ${statusClass}">${job.status}</span></td>
+                <td>
+                    <div>${job.progress_message}</div>
+                    <div class="job-progress-container">
+                        <div class="job-progress-bar" style="width: ${job.progress_percentage}%"></div>
+                    </div>
+                </td>
+                <td>${formattedDate}</td>
+                <td>
+                    <div class="flex gap-1">
+                        <a href="/jobs/${job.id}" class="btn btn-sm btn-outline">Details</a>
+                        <button onclick="confirmDeleteJob('${job.id}', '${repoName}')" class="btn btn-sm btn-error">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = rows;
+}
+
+function getStatusClass(status) {
+    switch (status) {
+        case 'pending':
+            return 'badge-warning';
+        case 'processing':
+            return 'badge-info';
+        case 'completed':
+            return 'badge-success';
+        case 'failed':
+            return 'badge-error';
+        default:
+            return 'badge-neutral';
+    }
+}
+
+function confirmDeleteJob(jobId, repoName) {
+    document.getElementById('deleteJobName').textContent = repoName || jobId;
+    document.getElementById('deleteJobForm').action = `/jobs/${jobId}/delete`;
+    document.getElementById('deleteJobModal').classList.add('modal-open');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteJobModal').classList.remove('modal-open');
+}
+</script>
+{% endblock %}
